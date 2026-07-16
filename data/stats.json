@@ -1,0 +1,93 @@
+{
+  "lastUpdated": "2026-07-16",
+  "fireDate": "2025-01-07",
+  "permitType": "Bldg-New",
+  "totalLots": 1628,
+  "funnel": {
+    "submitted": 1628,
+    "issued": 1088,
+    "construction": 905,
+    "completed": 27
+  },
+  "currentStage": {
+    "submitted": 540,
+    "issued": 183,
+    "construction": 878,
+    "completed": 27
+  },
+  "statuses": [
+    {
+      "key": "submitted",
+      "label": "Permit Submitted",
+      "color": "#8b5cf6",
+      "order": 1
+    },
+    {
+      "key": "issued",
+      "label": "Permit Issued",
+      "color": "#3b82f6",
+      "order": 2
+    },
+    {
+      "key": "construction",
+      "label": "Under Construction",
+      "color": "#f59e0b",
+      "order": 3
+    },
+    {
+      "key": "completed",
+      "label": "Completed (C of O)",
+      "color": "#22c55e",
+      "order": 4
+    }
+  ],
+  "byNeighborhood": {
+    "Alphabet Streets": {
+      "total": 391,
+      "submitted": 126,
+      "issued": 57,
+      "construction": 201,
+      "completed": 7
+    },
+    "Huntington Palisades": {
+      "total": 326,
+      "submitted": 109,
+      "issued": 39,
+      "construction": 171,
+      "completed": 7
+    },
+    "El Medio Bluffs": {
+      "total": 195,
+      "submitted": 56,
+      "issued": 18,
+      "construction": 117,
+      "completed": 4
+    },
+    "Marquez Knolls": {
+      "total": 293,
+      "submitted": 113,
+      "issued": 17,
+      "construction": 158,
+      "completed": 5
+    },
+    "The Riviera": {
+      "total": 260,
+      "submitted": 91,
+      "issued": 31,
+      "construction": 135,
+      "completed": 3
+    },
+    "Castellammare": {
+      "total": 163,
+      "submitted": 45,
+      "issued": 21,
+      "construction": 96,
+      "completed": 1
+    }
+  },
+  "timeline": {
+    "start": "2025-01-07",
+    "end": "2026-07-16",
+    "days": 555
+  }
+}

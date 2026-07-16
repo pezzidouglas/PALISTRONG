@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <title>Pali Rebuild Map — Tracking the Pacific Palisades Rebuild</title>
+    <meta
+      name="description"
+      content="An interactive map tracking the ground-up rebuild of Pacific Palisades after the January 2025 fire — new-construction permits submitted, issued, under construction, and completed."
+    />
+    <meta name="color-scheme" content="light" />
+
+    <!-- Leaflet (vendored locally — no external CDN dependency) -->
+    <link rel="stylesheet" href="vendor/leaflet/leaflet.css" />
+    <link rel="stylesheet" href="css/styles.css" />
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230b2a4a'/%3E%3Cpath d='M8 22V12l8-5 8 5v10' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linejoin='round'/%3E%3Ccircle cx='16' cy='19' r='2.4' fill='%2322c55e'/%3E%3C/svg%3E"
+    />
+  </head>
+  <body>
+    <header class="masthead">
+      <div class="masthead__inner">
+        <p class="kicker">The Palisadian-Post · Rebuild Tracker</p>
+        <h1>Pali Rebuild Map</h1>
+        <p class="subhead">
+          Tracking every ground-up home rebuild in Pacific Palisades after the
+          January 2025 fire. Only new-construction
+          (<span class="mono">Bldg-New</span>) permits are counted.
+        </p>
+        <p class="updated" id="lastUpdated">Loading…</p>
+      </div>
+    </header>
+
+    <section class="stats" id="stats" aria-label="Rebuild progress summary">
+      <!-- stat cards injected by app.js -->
+    </section>
+
+    <main class="map-wrap">
+      <div id="map" role="application" aria-label="Interactive rebuild map"></div>
+
+      <!-- Search -->
+      <div class="panel panel--search" id="searchPanel">
+        <label class="visually-hidden" for="searchInput">Search by address</label>
+        <div class="search-row">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2" />
+            <line x1="16.5" y1="16.5" x2="21" y2="21" stroke="currentColor" stroke-width="2" stroke-linecap="round" />
+          </svg>
+          <input
+            id="searchInput"
+            type="search"
+            placeholder="Search an address (e.g. Ocampo Dr)…"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button id="searchClear" class="search-clear" type="button" aria-label="Clear search" hidden>×</button>
+        </div>
+        <ul class="search-results" id="searchResults" role="listbox" hidden></ul>
+      </div>
+
+      <!-- Legend / filters -->
+      <div class="panel panel--legend" id="legendPanel">
+        <button class="panel__toggle" id="legendToggle" aria-expanded="true" aria-controls="legendBody">
+          <span>Legend &amp; Filters</span>
+          <span class="chev" aria-hidden="true">▾</span>
+        </button>
+        <div class="panel__body" id="legendBody">
+          <ul class="legend" id="legend"><!-- injected --></ul>
+
+          <div class="filter-block">
+            <label for="hoodSelect">Neighborhood</label>
+            <select id="hoodSelect">
+              <option value="">All neighborhoods</option>
+            </select>
+          </div>
+
+          <div class="filter-block">
+            <span class="filter-label">Basemap</span>
+            <div class="seg" role="group" aria-label="Basemap style">
+              <button class="seg__btn is-active" data-base="street" type="button">Street</button>
+              <button class="seg__btn" data-base="satellite" type="button">Satellite</button>
+            </div>
+          </div>
+
+          <p class="visible-count" id="visibleCount"></p>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="panel panel--timeline" id="timelinePanel">
+        <div class="timeline-head">
+          <button id="playBtn" class="play-btn" type="button" aria-label="Play rebuild time-lapse">
+            <svg class="ico-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z" /></svg>
+            <svg class="ico-pause" viewBox="0 0 24 24" aria-hidden="true" hidden><path d="M6 5h4v14H6zM14 5h4v14h-4z" /></svg>
+          </button>
+          <div class="timeline-meta">
+            <span class="timeline-title">Rebuild time-lapse</span>
+            <span class="timeline-date" id="timelineDate">—</span>
+          </div>
+          <button id="timelineReset" class="link-btn" type="button">Reset to today</button>
+        </div>
+        <input id="timeline" type="range" min="0" max="1000" value="1000" step="1" aria-label="Rebuild date" />
+        <div class="timeline-scale">
+          <span>Jan 2025 · Fire</span>
+          <span id="timelineEndLabel">Today</span>
+        </div>
+      </div>
+
+      <div class="map-loading" id="mapLoading">Loading rebuild data…</div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="footer-grid">
+        <div>
+          <h2>About this map</h2>
+          <p>
+            The Pali Rebuild Map follows the ground-up reconstruction of Pacific
+            Palisades after the January&nbsp;7,&nbsp;2025 fire. Each dot is a lot
+            with a new-construction permit, colored by where it stands in the
+            rebuild pipeline. Press play to watch the recovery unfold from the
+            week of the fire to today.
+          </p>
+        </div>
+        <div>
+          <h2>Methodology</h2>
+          <p>
+            Only new-construction (<span class="mono">Bldg-New</span>) permits are
+            counted — the ground-up rebuild of a home. Repair, ADU, pool, wall,
+            and other permit types are excluded. The funnel is cumulative: a home
+            counted as “under construction” was also submitted and issued.
+          </p>
+        </div>
+        <div>
+          <h2>Data &amp; disclaimer</h2>
+          <p>
+            This is an open-source <strong>recreation</strong> inspired by the
+            Palisadian-Post’s Pali Rebuild Map. Lot locations, addresses, and
+            dates in this demo are <strong>synthesized</strong> to match the
+            published rebuild totals and are not real permit records. See the
+            <a href="https://github.com/pezzidouglas/PALISTRONG" rel="noopener">README</a>
+            for sources and how to wire in live permit data.
+          </p>
+        </div>
+      </div>
+      <p class="colophon">
+        Built with Leaflet · Basemaps © OpenStreetMap, CARTO &amp; Esri ·
+        Recreation for demonstration only.
+      </p>
+    </footer>
+
+    <script src="vendor/leaflet/leaflet.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>

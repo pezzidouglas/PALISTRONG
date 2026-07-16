@@ -1,0 +1,15 @@
+# dependencies (none are shipped; Leaflet is vendored under vendor/)
+node_modules/
+
+# logs & os cruft
+*.log
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# scratch
+tmp/
+*.tgz
