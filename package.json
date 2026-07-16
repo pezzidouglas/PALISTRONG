@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "generate": "node scripts/generate-data.mjs",
+    "fetch": "node scripts/fetch-permits.mjs",
     "serve": "npx --yes serve ."
   },
   "keywords": [
