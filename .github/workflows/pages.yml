@@ -2,7 +2,10 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: ["main", "master"]
+    branches:
+      - main
+      - master
+      - claude/pali-rebuild-map-h3kks3
   workflow_dispatch:
 
 permissions:
@@ -17,6 +20,10 @@ concurrency:
 
 jobs:
   deploy:
+    # GitHub Pages has not been enabled for this repository yet. After enabling
+    # Settings → Pages → Source: GitHub Actions, set DEPLOY_PAGES=true in
+    # Settings → Secrets and variables → Actions → Variables.
+    if: ${{ vars.DEPLOY_PAGES == 'true' }}
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
