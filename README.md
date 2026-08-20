@@ -123,21 +123,40 @@ milestones, so real data drops in without touching the front-end.
 ## Wiring in real permit data
 
 The synthesized dataset is intentionally shaped like the real thing so you can
-swap in live records. To make it authoritative:
+swap in live records with **zero front-end changes**. The repo ships an adapter,
+[`scripts/fetch-permits.mjs`](scripts/fetch-permits.mjs), that pulls live
+permits from a public **ArcGIS FeatureServer** and writes `data/homes.geojson` +
+`data/stats.json` in the schema above.
 
-1. Pull new-construction (`Bldg-New`) permits for the Palisades ZIP codes from a
-   public source, e.g.:
-   - [LA County Recovers — Permitting Progress Dashboard](https://recovery.lacounty.gov/rebuilding/permitting-progress-dashboard/)
-   - [LA City Planning — Palisades Rebuild & Recovery](https://planning.lacity.gov/project-review/palisades-rebuild-recovery)
-   - [CAL FIRE Damage Inspection (DINS) structure status](https://hub-calfire-forestry.hub.arcgis.com/)
-2. Geocode each address to `[lon, lat]`.
-3. Emit a `FeatureCollection` matching the schema above (and a `stats.json`).
-4. Drop the two files into `data/`. No front-end changes required.
+```bash
+# 1. Point it at a real permit layer and preview what comes back:
+LAYER_URL="https://services.arcgis.com/…/FeatureServer/0" \
+  node scripts/fetch-permits.mjs --dry-run
 
-> ⚠️ **Disclaimer:** The lot locations, addresses, and dates committed here are
-> **synthesized** to match published rebuild totals for demonstration. They are
-> **not** real permit records and should not be used to make decisions about a
-> specific property.
+# 2. Happy with the funnel? Drop the --dry-run to write the data files:
+LAYER_URL="https://services.arcgis.com/…/FeatureServer/0" \
+  node scripts/fetch-permits.mjs
+```
+
+Where to find a `LAYER_URL` (Palisades new-construction permits are City of LA /
+LADBS jurisdiction, so city sources are primary; county dashboards cover the
+unincorporated fringe):
+
+- [LA County Recovers — Permitting Progress Dashboard](https://recovery.lacounty.gov/rebuilding/permitting-progress-dashboard/)
+- [LA GeoHub — Palisades rebuild layers](https://geohub.lacity.org/)
+- [LA City Planning — Palisades Rebuild & Recovery](https://planning.lacity.gov/project-review/palisades-rebuild-recovery)
+- [CAL FIRE Damage Inspection (DINS) structure status](https://hub-calfire-forestry.hub.arcgis.com/)
+
+Field names differ between layers, so the adapter maps them via the `FIELDS`
+block (overridable with `F_ADDRESS`, `F_STATUS`, … env vars) and classifies each
+permit into a stage from its milestone dates, falling back to a status string.
+Open the layer's `?f=json` metadata to confirm the column names; if a mapping is
+off, `--dry-run` prints the fields the layer actually returned.
+
+> ⚠️ **Disclaimer:** The lot locations, addresses, and dates committed to this
+> repo are **synthesized** to match published rebuild totals for demonstration.
+> They are **not** real permit records and should not be used to make decisions
+> about a specific property. Run the adapter above to replace them with live data.
 
 ---
 
@@ -158,7 +177,9 @@ swap in live records. To make it authoritative:
 ├── data/
 │   ├── homes.geojson       # generated lot dataset
 │   └── stats.json          # generated funnel + timeline
-├── scripts/generate-data.mjs   # reproducible dataset generator
+├── scripts/
+│   ├── generate-data.mjs   # reproducible synthetic dataset generator
+│   └── fetch-permits.mjs   # live ArcGIS permit adapter (real data)
 ├── vendor/leaflet/         # vendored Leaflet dist
 └── .github/workflows/pages.yml # GitHub Pages deploy
 ```

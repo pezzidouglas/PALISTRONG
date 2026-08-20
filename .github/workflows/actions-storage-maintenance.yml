@@ -1,0 +1,112 @@
+name: Actions storage maintenance
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/actions-storage-maintenance.yml"
+  schedule:
+    - cron: "43 11 * * 0"
+
+permissions:
+  actions: write
+  contents: read
+
+concurrency:
+  group: actions-storage-maintenance
+  cancel-in-progress: true
+
+jobs:
+  cleanup:
+    if: github.ref_name == github.event.repository.default_branch
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Delete stale Actions storage
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPOSITORY: ${{ github.repository }}
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          artifact_cutoff="$(date -u -d '7 days ago' +'%Y-%m-%dT%H:%M:%SZ')"
+          cache_cutoff="$artifact_cutoff"
+          run_cutoff="$(date -u -d '30 days ago' +'%Y-%m-%dT%H:%M:%SZ')"
+
+          artifact_json="$(gh api --paginate --slurp "/repos/${REPOSITORY}/actions/artifacts?per_page=100")"
+          mapfile -t artifact_ids < <(
+            jq -r --arg cutoff "$artifact_cutoff" '
+              [.[].artifacts[]]
+              | sort_by(.name, .created_at)
+              | group_by(.name)
+              | .[]
+              | sort_by(.created_at)
+              | reverse
+              | .[1:][]
+              | select(.created_at < $cutoff)
+              | .id
+            ' <<<"$artifact_json"
+          )
+
+          artifact_deleted=0
+          for artifact_id in "${artifact_ids[@]}"; do
+            if gh api --method DELETE "/repos/${REPOSITORY}/actions/artifacts/${artifact_id}" >/dev/null 2>&1; then
+              ((artifact_deleted+=1))
+            else
+              echo "::warning::Could not delete artifact ${artifact_id}; it may already be expired."
+            fi
+          done
+
+          cache_json="$(gh api --paginate --slurp "/repos/${REPOSITORY}/actions/caches?per_page=100")"
+          mapfile -t cache_ids < <(
+            jq -r --arg cutoff "$cache_cutoff" '
+              [.[].actions_caches[]]
+              | .[]
+              | select(.last_accessed_at < $cutoff)
+              | .id
+            ' <<<"$cache_json"
+          )
+
+          cache_deleted=0
+          for cache_id in "${cache_ids[@]}"; do
+            if gh api --method DELETE "/repos/${REPOSITORY}/actions/caches/${cache_id}" >/dev/null 2>&1; then
+              ((cache_deleted+=1))
+            else
+              echo "::warning::Could not delete cache ${cache_id}; it may already be gone."
+            fi
+          done
+
+          run_json="$(gh api --paginate --slurp "/repos/${REPOSITORY}/actions/runs?status=completed&per_page=100")"
+          mapfile -t run_ids < <(
+            jq -r --arg cutoff "$run_cutoff" '
+              [.[].workflow_runs[]]
+              | sort_by(.workflow_id, .created_at)
+              | group_by(.workflow_id)
+              | .[]
+              | sort_by(.created_at)
+              | reverse
+              | .[1:][]
+              | select(.created_at < $cutoff)
+              | .id
+            ' <<<"$run_json"
+          )
+
+          run_deleted=0
+          for run_id in "${run_ids[@]}"; do
+            if gh api --method DELETE "/repos/${REPOSITORY}/actions/runs/${run_id}" >/dev/null 2>&1; then
+              ((run_deleted+=1))
+            else
+              echo "::warning::Could not delete workflow run ${run_id}; it may already be gone."
+            fi
+          done
+
+          {
+            echo "## Actions storage maintenance"
+            echo
+            echo "- Artifacts deleted: ${artifact_deleted}"
+            echo "- Caches deleted: ${cache_deleted}"
+            echo "- Completed workflow runs deleted: ${run_deleted}"
+            echo "- Newest artifact of each name was preserved."
+            echo "- Newest completed run of each workflow was preserved."
+          } >> "$GITHUB_STEP_SUMMARY"
